@@ -81,6 +81,7 @@ describe('Board', () => {
         selected={null}
         legalTargets={[]}
         lastMove={null}
+        moveSeq={0}
         onSquareTap={noop}
         aliveSeats={SEAT_ORDER}
         turn="S"
@@ -96,6 +97,7 @@ describe('Board', () => {
         selected={null}
         legalTargets={[]}
         lastMove={null}
+        moveSeq={0}
         onSquareTap={noop}
         aliveSeats={SEAT_ORDER}
         turn="S"
@@ -125,6 +127,7 @@ describe('Board', () => {
         selected={null}
         legalTargets={[]}
         lastMove={null}
+        moveSeq={0}
         onSquareTap={noop}
         aliveSeats={SEAT_ORDER}
         turn="S"
@@ -156,6 +159,7 @@ describe('Board', () => {
         selected={null}
         legalTargets={[]}
         lastMove={null}
+        moveSeq={0}
         onSquareTap={onSquareTap}
         aliveSeats={SEAT_ORDER}
         turn="S"
@@ -188,6 +192,7 @@ describe('Board', () => {
         selected={selected}
         legalTargets={legalTargets}
         lastMove={lastMove}
+        moveSeq={1}
         onSquareTap={noop}
         aliveSeats={SEAT_ORDER}
         turn="S"
@@ -220,6 +225,7 @@ describe('Board', () => {
         selected={null}
         legalTargets={[]}
         lastMove={null}
+        moveSeq={0}
         onSquareTap={onSquareTap}
         aliveSeats={SEAT_ORDER}
         turn="S"
@@ -248,6 +254,7 @@ describe('Board', () => {
         selected={null}
         legalTargets={[]}
         lastMove={null}
+        moveSeq={0}
         onSquareTap={noop}
         aliveSeats={SEAT_ORDER}
         turn="S"
@@ -274,6 +281,7 @@ describe('Board', () => {
         selected={null}
         legalTargets={[]}
         lastMove={null}
+        moveSeq={0}
         onSquareTap={noop}
         aliveSeats={SEAT_ORDER}
         turn="S"
@@ -282,5 +290,124 @@ describe('Board', () => {
 
     const cell = document.querySelector('[data-square="0,3"]')
     expect(cell?.querySelector('[data-testid="promo-marker"]')).toBeNull()
+  })
+
+  describe('move animation', () => {
+    function boardWithMovedPiece(): { board: BoardModel; lastMove: Move } {
+      const board = emptyBoard()
+      place(board, { row: 5, col: 5 }, makePiece('S', 'knight'))
+      place(board, { row: 2, col: 2 }, makePiece('W', 'pawn'))
+      const lastMove: Move = {
+        from: { row: 6, col: 6 },
+        to: { row: 5, col: 5 },
+      }
+      return { board, lastMove }
+    }
+
+    it('gives the piece on the destination square a slide animation with deltas back to its origin, and leaves other pieces alone', () => {
+      const { board, lastMove } = boardWithMovedPiece()
+
+      render(
+        <Board
+          board={board}
+          selected={null}
+          legalTargets={[]}
+          lastMove={lastMove}
+          moveSeq={3}
+          onSquareTap={noop}
+          aliveSeats={SEAT_ORDER}
+          turn="S"
+        />,
+      )
+
+      const toCell = document.querySelector('[data-square="5,5"]')
+      const slidingSlot = toCell?.querySelector('.square__piece-slot')
+      expect(slidingSlot).not.toBeNull()
+      expect(slidingSlot).toHaveClass('square__piece-slot--sliding')
+      // from (6,6) -> to (5,5): one square up and one square left.
+      expect(
+        (slidingSlot as HTMLElement).style.getPropertyValue('--slide-dx'),
+      ).toBe('1')
+      expect(
+        (slidingSlot as HTMLElement).style.getPropertyValue('--slide-dy'),
+      ).toBe('1')
+
+      // A piece that did not just move gets no animation marker at all.
+      const otherCell = document.querySelector('[data-square="2,2"]')
+      const otherSlot = otherCell?.querySelector('.square__piece-slot')
+      expect(otherSlot).not.toBeNull()
+      expect(otherSlot).not.toHaveClass('square__piece-slot--sliding')
+      expect((otherSlot as HTMLElement).style.getPropertyValue('--slide-dx')).toBe(
+        '',
+      )
+    })
+
+    it('marks the origin square with a "moved from" state distinct from a legal target', () => {
+      const { board, lastMove } = boardWithMovedPiece()
+      // A genuine legal-move target elsewhere on the board, so the test can
+      // compare its data-state/class against the origin's directly.
+      const legalTargets: Square[] = [{ row: 3, col: 2 }]
+
+      render(
+        <Board
+          board={board}
+          selected={null}
+          legalTargets={legalTargets}
+          lastMove={lastMove}
+          moveSeq={3}
+          onSquareTap={noop}
+          aliveSeats={SEAT_ORDER}
+          turn="S"
+        />,
+      )
+
+      const fromCell = document.querySelector(
+        `[data-square="${lastMove.from.row},${lastMove.from.col}"]`,
+      )
+      const targetCell = document.querySelector('[data-square="3,2"]')
+
+      expect(fromCell?.getAttribute('data-state')).toBe('last-from')
+      expect(targetCell?.getAttribute('data-state')).toBe('target')
+      // The origin marker must never be expressed with the same data-state
+      // (or the legal-target CSS class) as an actual legal target — a player
+      // must be able to tell "a piece moved from here" apart from "you may
+      // move here" at a glance.
+      expect(fromCell?.getAttribute('data-state')).not.toBe(
+        targetCell?.getAttribute('data-state'),
+      )
+      expect(fromCell).not.toHaveClass('square--target')
+      expect(fromCell).toHaveClass('square--last')
+
+      const toCell = document.querySelector('[data-square="5,5"]')
+      expect(toCell?.getAttribute('data-state')).toBe('last-to')
+      expect(toCell?.getAttribute('data-state')).not.toBe(
+        fromCell?.getAttribute('data-state'),
+      )
+    })
+
+    it('applies no slide markers when lastMove is null (a board reset)', () => {
+      const board = emptyBoard()
+      place(board, { row: 5, col: 5 }, makePiece('S', 'knight'))
+
+      render(
+        <Board
+          board={board}
+          selected={null}
+          legalTargets={[]}
+          lastMove={null}
+          moveSeq={4}
+          onSquareTap={noop}
+          aliveSeats={SEAT_ORDER}
+          turn="S"
+        />,
+      )
+
+      expect(
+        document.querySelectorAll('.square__piece-slot--sliding'),
+      ).toHaveLength(0)
+      expect(document.querySelectorAll('[data-state^="last-"]')).toHaveLength(
+        0,
+      )
+    })
   })
 })

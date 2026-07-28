@@ -22,11 +22,22 @@ function sentenceFor(event: GameEvent): string | null {
   }
 }
 
-/** Transient announcements for notable events (elimination, skip, promotion, draw). */
-export function EventBanner({ events }: EventBannerProps): JSX.Element | null {
-  const sentences = events
+/**
+ * The human-readable sentences a given event list would produce, i.e.
+ * whether `<EventBanner>` would render anything. Exported so callers (the
+ * app shell's status slot) can decide precedence against other status
+ * content — e.g. the AI "thinking" indicator — without duplicating this
+ * event -> sentence mapping.
+ */
+export function eventSentences(events: readonly GameEvent[]): string[] {
+  return events
     .map((event) => sentenceFor(event))
     .filter((s): s is string => s !== null)
+}
+
+/** Transient announcements for notable events (elimination, skip, promotion, draw). */
+export function EventBanner({ events }: EventBannerProps): JSX.Element | null {
+  const sentences = eventSentences(events)
 
   if (sentences.length === 0) return null
 

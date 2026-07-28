@@ -15,7 +15,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "verify:ai": "node scripts/ai-smoke.mjs",
     "tunnel": "cloudflared tunnel --url http://localhost:4173",
-    "deploy": "npm run build && npx wrangler pages deploy dist --project-name chards"
+    "deploy": "npm run build && npx wrangler pages deploy dist --project-name chards",
+    "verify:layout": "node scripts/layout-check.mjs"
   },
   "dependencies": {
     "react": "^19.2.7",

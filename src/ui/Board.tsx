@@ -8,7 +8,12 @@ import {
   type Seat,
   type Square,
 } from '../engine/types'
-import { SquareCell, type LastMoveState, type TargetState } from './SquareCell'
+import {
+  SquareCell,
+  type LastMoveState,
+  type SlideDelta,
+  type TargetState,
+} from './SquareCell'
 import './board.css'
 
 /** Square -> owning seat, derived once from SETUP_SLOTS (corners map to nothing). */
@@ -35,6 +40,14 @@ export interface BoardProps {
   selected: Square | null
   legalTargets: readonly Square[]
   lastMove: Move | null
+  /**
+   * Monotonically increasing move counter (`game.moveCount`). A re-render
+   * with the same `lastMove` but the same `moveSeq` is just incidental UI
+   * state changing (selection, etc.) and must not replay the slide
+   * animation; a new `moveSeq` means a real move landed and the animation
+   * should play once for it.
+   */
+  moveSeq: number
   /** Fired for every tap/click on any square, including empty ones. */
   onSquareTap: (square: Square) => void
   /** Seats with no pieces left; their edge stripe renders dimmed. */
@@ -51,6 +64,7 @@ export function Board({
   selected,
   legalTargets,
   lastMove,
+  moveSeq,
   onSquareTap,
   aliveSeats,
   turn,
@@ -72,9 +86,19 @@ export function Board({
         : 'none'
 
       let lastMoveState: LastMoveState = 'none'
+      let slide: SlideDelta | null = null
       if (lastMove) {
         if (sameSquare(lastMove.from, square)) lastMoveState = 'from'
-        else if (sameSquare(lastMove.to, square)) lastMoveState = 'to'
+        else if (sameSquare(lastMove.to, square)) {
+          lastMoveState = 'to'
+          // The piece now sitting here just arrived from `lastMove.from`, so
+          // it starts translated by that whole-square delta and animates to
+          // zero — i.e. it slides in from where it came.
+          slide = {
+            dx: lastMove.from.col - lastMove.to.col,
+            dy: lastMove.from.row - lastMove.to.row,
+          }
+        }
       }
 
       cells.push(
@@ -89,6 +113,8 @@ export function Board({
           isSelected={isSelected}
           targetState={targetState}
           lastMoveState={lastMoveState}
+          slide={slide}
+          moveSeq={moveSeq}
           onTap={onSquareTap}
           disabled={disabled}
         />,

@@ -1,4 +1,4 @@
-import type { JSX } from 'react'
+import type { CSSProperties, JSX } from 'react'
 import { SEAT_NAMES, type Piece, type Seat, type Square } from '../engine/types'
 import { PieceView } from './PieceView'
 
@@ -29,6 +29,18 @@ function pieceDescription(piece: Piece): string {
 export type TargetState = 'none' | 'move' | 'capture'
 export type LastMoveState = 'none' | 'from' | 'to'
 
+/** Whole-square offset (in grid units) a just-moved piece should animate in from. */
+export interface SlideDelta {
+  dx: number
+  dy: number
+}
+
+/** Custom properties consumed by the `piece-slide` keyframes in board.css. */
+interface SlideStyle extends CSSProperties {
+  '--slide-dx': number
+  '--slide-dy': number
+}
+
 export interface SquareCellProps {
   square: Square
   piece: Piece | null
@@ -43,6 +55,14 @@ export interface SquareCellProps {
   isSelected: boolean
   targetState: TargetState
   lastMoveState: LastMoveState
+  /** Set only on the destination square of a fresh move; drives the slide-in animation. */
+  slide: SlideDelta | null
+  /**
+   * `game.moveCount`, used as the animated slot's React key so the slide
+   * replays on every new move (a CSS animation does not restart on its own
+   * just because props changed) but not on incidental re-renders.
+   */
+  moveSeq: number
   onTap: (square: Square) => void
   disabled?: boolean
 }
@@ -58,6 +78,8 @@ export function SquareCell({
   isSelected,
   targetState,
   lastMoveState,
+  slide,
+  moveSeq,
   onTap,
   disabled = false,
 }: SquareCellProps): JSX.Element {
@@ -97,7 +119,28 @@ export function SquareCell({
       disabled={disabled}
       onClick={() => onTap(square)}
     >
-      {piece ? <PieceView piece={piece} /> : null}
+      {piece ? (
+        <div
+          // Keying on `moveSeq` only while sliding means the slot remounts
+          // (and so replays its CSS animation) exactly when a fresh move
+          // lands here — not on every incidental re-render, which would
+          // otherwise leave the animation stuck on its very first frame.
+          key={slide ? moveSeq : undefined}
+          className={
+            slide ? 'square__piece-slot square__piece-slot--sliding' : 'square__piece-slot'
+          }
+          style={
+            slide
+              ? ({
+                  '--slide-dx': slide.dx,
+                  '--slide-dy': slide.dy,
+                } as SlideStyle)
+              : undefined
+          }
+        >
+          <PieceView piece={piece} />
+        </div>
+      ) : null}
     </button>
   )
 }

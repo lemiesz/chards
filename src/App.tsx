@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useState } from 'react'
 import { Board } from './ui/Board'
 import { TurnBanner } from './ui/TurnBanner'
 import { PlayerPanel } from './ui/PlayerPanel'
-import { EventBanner } from './ui/EventBanner'
+import { EventBanner, eventSentences } from './ui/EventBanner'
 import { Home } from './ui/screens/Home'
 import { Rules } from './ui/screens/Rules'
 import { GameOver } from './ui/screens/GameOver'
@@ -158,14 +158,30 @@ export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) 
         </button>
       </header>
 
-      <EventBanner events={game.events} />
+      {/*
+        A single fixed-height slot for the "thinking" indicator and the event
+        banner. Both come and go constantly during play (especially with
+        computer opponents), and the old code rendered them as siblings that
+        appeared/disappeared — every appearance shoved the board down a few
+        pixels. Keeping one always-present element here, sized by CSS to fit
+        its tallest normal content, means the board's vertical position never
+        moves regardless of what (if anything) is showing.
 
-      {aiToMove && (
-        <div className="ai-thinking" role="status" aria-live="polite">
-          <span className="ai-thinking__dot" aria-hidden="true" />
-          {SEAT_NAMES[game.turn]} is thinking…
-        </div>
-      )}
+        The event banner takes priority over the thinking indicator: the
+        move that, say, eliminates a seat also hands the turn to the next
+        (often computer) seat in the very same render, so if "thinking" won
+        that race the elimination would never be visible at all.
+      */}
+      <div className="app__status">
+        {eventSentences(game.events).length > 0 ? (
+          <EventBanner events={game.events} />
+        ) : aiToMove ? (
+          <div className="ai-thinking" role="status" aria-live="polite">
+            <span className="ai-thinking__dot" aria-hidden="true" />
+            {SEAT_NAMES[game.turn]} is thinking…
+          </div>
+        ) : null}
+      </div>
 
       <div className="app__board">
         <Board
@@ -173,6 +189,7 @@ export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) 
           selected={state.selected}
           legalTargets={state.legalTargets}
           lastMove={justReset ? null : game.lastMove}
+          moveSeq={game.moveCount}
           onSquareTap={(square) => dispatch({ type: 'tapSquare', square })}
           aliveSeats={game.aliveSeats}
           turn={game.turn}

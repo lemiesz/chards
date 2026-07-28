@@ -36,6 +36,21 @@
   flex: 0 0 auto;
 }
 
+/* Fixed-height slot for the AI "thinking" indicator / event banner, so the
+   board below it never shifts vertically when one appears or disappears.
+   The height fits two lines of the event banner (its tallest normal
+   content — event-banner.css clamps each sentence to one line and the whole
+   banner to this height) with room to spare for the single-line thinking
+   indicator, which is simply centred within it. */
+.app__status {
+  /* Measured, not guessed: at 320/390/428px both the thinking indicator and a
+     one-line event banner are 35px tall, so 2.5rem (40px) fits either with a
+     little breathing room and never changes height. */
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+}
+
 .app__board {
   display: flex;
   justify-content: center;
@@ -50,7 +65,7 @@
     grid-template-rows: auto auto 1fr;
     grid-template-areas:
       'board top'
-      'board events'
+      'board status'
       'board panel';
     align-content: start;
     column-gap: 0.75rem;
@@ -65,8 +80,8 @@
     grid-area: board;
   }
 
-  .event-banner {
-    grid-area: events;
+  .app__status {
+    grid-area: status;
   }
 
   .player-panel {

@@ -44,18 +44,43 @@
 /* ---------------------------------------------------------------------- */
 
 .event-banner {
+  /* A single row, not a column. Reserving permanent space for the rare
+     two-events-at-once case cost 25px of board on every screen; measured at
+     320/390/428px the tallest common content (one sentence, or the thinking
+     indicator) is 35px, so the slot is sized for that and a second event sits
+     beside the first instead of below it. */
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.5rem 0.75rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
   border-radius: var(--radius);
   background: var(--bg-raised-2);
   border: 1px solid var(--border);
   font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+  /* Matches .app__status's min-height so the banner can never grow the
+     status slot — a long sentence or several events at once clips instead
+     of wrapping and pushing the board down. */
+  max-height: 2.5rem;
+  overflow: hidden;
+}
+
+/* Separator between two events sharing the row. */
+.event-banner__item + .event-banner__item::before {
+  content: '· ';
+  color: var(--text-dim);
 }
 
 .event-banner__item {
   color: var(--text);
+  /* One line each, ellipsised rather than wrapped — text wrapping inside the
+     banner is exactly the kind of layout shift the fixed-height slot exists
+     to prevent. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ---------------------------------------------------------------------- */

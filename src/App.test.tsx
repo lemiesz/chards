@@ -168,6 +168,48 @@ describe('App: move flow', () => {
 })
 
 // ---------------------------------------------------------------------------
+// Status slot (thinking indicator / event banner) — layout stability
+// ---------------------------------------------------------------------------
+//
+// jsdom does not lay elements out, so these tests cannot measure that the
+// board's pixel position stays put. What they can prove is the structural
+// guarantee that makes that true in a real browser: the status slot is a
+// single, always-present element, and the thinking indicator / event banner
+// render *inside* it rather than as siblings that mount and unmount (which
+// is what used to shove the board up and down).
+
+describe('App: status slot layout', () => {
+  it('keeps the status slot in the tree even when it has nothing to show', async () => {
+    const user = userEvent.setup()
+    render(<App seed={7} />)
+    await setAllSeatsHuman(user)
+    await user.click(screen.getByRole('button', { name: /new game/i }))
+    await user.click(screen.getByRole('button', { name: /start/i }))
+
+    const slot = document.querySelector('.app__status')
+    expect(slot).not.toBeNull()
+    // A fresh game with every seat human: nothing to announce yet.
+    expect(slot?.querySelector('.ai-thinking')).toBeNull()
+    expect(slot?.querySelector('.event-banner')).toBeNull()
+  })
+
+  it('renders the ai-thinking indicator inside the status slot, not as a sibling of the board', async () => {
+    const user = userEvent.setup()
+    // seed 0 deals West (a computer seat by default) the first turn.
+    render(<App seed={0} aiDelayMs={10000} />)
+    await user.click(screen.getByRole('button', { name: /new game/i }))
+    await user.click(screen.getByRole('button', { name: /start/i }))
+
+    const slot = document.querySelector('.app__status')
+    expect(slot).not.toBeNull()
+    expect(slot?.querySelector('.ai-thinking')).not.toBeNull()
+    // Before this change the indicator was a direct child of <main class="app">;
+    // it must now only ever appear nested inside the slot.
+    expect(document.querySelector('.app > .ai-thinking')).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
 // Rules
 // ---------------------------------------------------------------------------
 

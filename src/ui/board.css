@@ -100,12 +100,29 @@
   outline-offset: -3px;
 }
 
-.square--last::after {
-  background: color-mix(in srgb, var(--square-last) 30%, transparent);
-}
-
 .square--target::after {
   background: transparent;
+}
+
+/* Last-move markers. Origin and destination are deliberately different
+   shapes, not just different opacities of the same tint, so "a piece moved
+   from here" can never be mistaken for "you may move here" (the green
+   legal-target dot/ring below) even for colour-blind players glancing
+   quickly. */
+
+/* Destination: a solid tint fill — the piece that just landed here. */
+.square[data-state='last-to']::after {
+  background: color-mix(in srgb, var(--square-last) 38%, transparent);
+}
+
+/* Origin: a hollow dashed ring plus a faint tint — "empty, something left
+   from here" — clearly hollow/ghostly rather than the solid destination
+   fill, and dashed rather than the legal-target ring's solid outline. */
+.square[data-state='last-from']::after {
+  background: color-mix(in srgb, var(--square-last) 12%, transparent);
+  outline: 3px dashed color-mix(in srgb, var(--square-last) 75%, transparent);
+  outline-offset: -3px;
+  border-radius: 50%;
 }
 
 /* Empty legal-move target: a dot. */
@@ -122,6 +139,43 @@
   outline: 4px solid color-mix(in srgb, var(--square-target) 80%, transparent);
   outline-offset: -4px;
   border-radius: 50%;
+}
+
+/* Fills the square exactly (unlike .piece, which is only as big as its
+   content) so the slide animation's percentage-based translate below — which
+   is relative to *this* element's own box — moves a piece by exactly one
+   square per whole-number delta, regardless of board size. */
+.square__piece-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.square__piece-slot--sliding {
+  animation: piece-slide 170ms ease-out;
+  /* Draw above neighbouring squares while travelling across them. */
+  position: relative;
+  z-index: 5;
+}
+
+@keyframes piece-slide {
+  from {
+    transform: translate(
+      calc(var(--slide-dx) * 100%),
+      calc(var(--slide-dy) * 100%)
+    );
+  }
+  to {
+    transform: translate(0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .square__piece-slot--sliding {
+    animation: none;
+  }
 }
 
 .piece {
