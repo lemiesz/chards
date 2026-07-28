@@ -1,0 +1,100 @@
+/* Chards — global styles and design tokens.
+   Player colours are chosen to be distinguishable with common colour-vision
+   deficiencies (blue / orange / green / purple) and are always paired with the
+   seat letter + name in the UI so colour is never the only signal. */
+
+:root {
+  --bg: #12151d;
+  --bg-raised: #1b1f2a;
+  --bg-raised-2: #252b3a;
+  --text: #eef1f7;
+  --text-dim: #a3adc2;
+  --border: #333b4d;
+
+  --light-square: #d8cfc0;
+  --dark-square: #9a8f7d;
+  --square-selected: #ffd54a;
+  --square-target: #4ade80;
+  --square-last: #6ea8ff;
+
+  --seat-s: #2f7ae5; /* blue   */
+  --seat-w: #e8862a; /* orange */
+  --seat-n: #2fae6a; /* green  */
+  --seat-e: #a35bd4; /* purple */
+
+  --radius: 10px;
+  --font:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Buttons shared across screens */
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: var(--bg-raised-2);
+  color: var(--text);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn--primary {
+  background: var(--seat-s);
+  border-color: transparent;
+}
+
+.btn--ghost {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

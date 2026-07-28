@@ -1,0 +1,209 @@
+/* Chards board — uses design tokens from src/index.css, no new palette. */
+
+.board {
+  --square-size: min(11vw, 11dvh, 4rem);
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+  /* Leave room for the app's own padding so the board never overflows the
+     viewport — in landscape the height is what constrains it. */
+  width: min(100vw - 1rem, 100dvh - 1rem, 640px);
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  border-radius: var(--radius);
+  overflow: hidden;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.square {
+  position: relative;
+  appearance: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  /* Squares are sized by the grid (1fr each) so eight of them always fit the
+     board exactly. A hard 40px floor would overflow a 320px-wide phone and get
+     clipped, so the floor is 32px — at 375px width squares are ~45px. */
+  min-width: 32px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.square:disabled {
+  cursor: default;
+}
+
+.square--light {
+  background: var(--light-square);
+}
+
+.square--dark {
+  background: var(--dark-square);
+}
+
+/* Seat edge stripe: a thin inset bar on the side of the board that seat sits at. */
+.square::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.square[data-edge-seat='S']::before {
+  box-shadow: inset 0 -4px 0 0 var(--seat-s);
+  opacity: 0.85;
+}
+
+.square[data-edge-seat='W']::before {
+  box-shadow: inset 4px 0 0 0 var(--seat-w);
+  opacity: 0.85;
+}
+
+.square[data-edge-seat='N']::before {
+  box-shadow: inset 0 4px 0 0 var(--seat-n);
+  opacity: 0.85;
+}
+
+.square[data-edge-seat='E']::before {
+  box-shadow: inset -4px 0 0 0 var(--seat-e);
+  opacity: 0.85;
+}
+
+.square[data-edge-seat][data-edge-alive='false']::before {
+  opacity: 0.25;
+}
+
+.square[data-edge-seat][data-edge-active='true']::before {
+  opacity: 1;
+}
+
+/* Highlights: selected / legal targets / last move. Layered via ::after so the
+   edge stripe (::before) stays visible underneath. */
+.square::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.square--selected::after {
+  outline: 3px solid var(--square-selected);
+  outline-offset: -3px;
+}
+
+.square--last::after {
+  background: color-mix(in srgb, var(--square-last) 30%, transparent);
+}
+
+.square--target::after {
+  background: transparent;
+}
+
+/* Empty legal-move target: a dot. */
+.square[data-state='target']::after {
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--square-target) 70%, transparent) 18%,
+    transparent 19%
+  );
+}
+
+/* Capture legal-move target: a ring around the occupied square, keeping the piece visible. */
+.square[data-state='capture-target']::after {
+  outline: 4px solid color-mix(in srgb, var(--square-target) 80%, transparent);
+  outline-offset: -4px;
+  border-radius: 50%;
+}
+
+.piece {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+.piece__chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 78%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.piece__chip--S {
+  background: var(--seat-s);
+}
+
+.piece__chip--W {
+  background: var(--seat-w);
+}
+
+.piece__chip--N {
+  background: var(--seat-n);
+}
+
+.piece__chip--E {
+  background: var(--seat-e);
+}
+
+.piece__glyph {
+  font-size: clamp(0.9rem, 5.5vw, 1.9rem);
+  line-height: 1;
+  color: #fff;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+}
+
+.piece__promo-marker {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 0.7em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 50%;
+  width: 1.1em;
+  height: 1.1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.piece__card {
+  font-size: clamp(0.55rem, 2.6vw, 0.8rem);
+  font-weight: 700;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 4px;
+  background: #f4f1ea;
+}
+
+.piece__card--black {
+  color: #1a1a1a;
+}
+
+.piece__card--red {
+  color: #b3261e;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .square::before {
+    transition: none;
+  }
+}

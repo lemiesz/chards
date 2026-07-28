@@ -1,0 +1,76 @@
+/* App shell layout. The board is the star: it gets whatever space is left after
+   the turn banner and the four-seat panel, and never forces page scrolling. */
+
+.app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: max(0.5rem, env(safe-area-inset-top)) 0.5rem
+    max(0.5rem, env(safe-area-inset-bottom));
+  max-width: 700px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.app--screen {
+  justify-content: flex-start;
+  gap: 1rem;
+}
+
+.app__top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app__top > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.app__rules-btn {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  min-height: 40px;
+  flex: 0 0 auto;
+}
+
+.app__board {
+  display: flex;
+  justify-content: center;
+}
+
+/* Short landscape phones: put the board on the left and stack the chrome beside
+   it, so the board stays as large as the viewport height allows. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .app {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'board top'
+      'board events'
+      'board panel';
+    align-content: start;
+    column-gap: 0.75rem;
+    max-width: none;
+  }
+
+  .app__top {
+    grid-area: top;
+  }
+
+  .app__board {
+    grid-area: board;
+  }
+
+  .event-banner {
+    grid-area: events;
+  }
+
+  .player-panel {
+    grid-area: panel;
+    align-content: start;
+  }
+}
