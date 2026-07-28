@@ -115,14 +115,45 @@
   background: color-mix(in srgb, var(--square-last) 38%, transparent);
 }
 
-/* Origin: a hollow dashed ring plus a faint tint — "empty, something left
-   from here" — clearly hollow/ghostly rather than the solid destination
-   fill, and dashed rather than the legal-target ring's solid outline. */
-.square[data-state='last-from']::after {
-  background: color-mix(in srgb, var(--square-last) 12%, transparent);
-  outline: 3px dashed color-mix(in srgb, var(--square-last) 75%, transparent);
-  outline-offset: -3px;
+/* Destination tint takes the moving seat's colour. */
+.square[data-state='last-to'][data-marker-seat='S']::after {
+  background: color-mix(in srgb, var(--seat-s) 38%, transparent);
+}
+.square[data-state='last-to'][data-marker-seat='W']::after {
+  background: color-mix(in srgb, var(--seat-w) 38%, transparent);
+}
+.square[data-state='last-to'][data-marker-seat='N']::after {
+  background: color-mix(in srgb, var(--seat-n) 38%, transparent);
+}
+.square[data-state='last-to'][data-marker-seat='E']::after {
+  background: color-mix(in srgb, var(--seat-e) 38%, transparent);
+}
+
+/* Origin marker: a hollow dashed ring in the departing seat's own colour, so
+   all four players' last moves are readable at once — "West came from here" —
+   rather than only whoever moved most recently. Its own element rather than
+   ::after so a legal-target highlight on the same square still wins the eye.
+   Dashed and hollow keeps it distinct from the solid legal-target ring. */
+.square__origin {
+  position: absolute;
+  inset: 12%;
   border-radius: 50%;
+  border: 2px dashed currentColor;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.square__origin[data-seat='S'] {
+  color: var(--seat-s);
+}
+.square__origin[data-seat='W'] {
+  color: var(--seat-w);
+}
+.square__origin[data-seat='N'] {
+  color: var(--seat-n);
+}
+.square__origin[data-seat='E'] {
+  color: var(--seat-e);
 }
 
 /* Empty legal-move target: a dot. */

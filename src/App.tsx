@@ -21,7 +21,7 @@ import { SEAT_NAMES, type GameState } from './engine/types'
 import './ui/app.css'
 
 /** How long a computer seat "thinks" before its move appears, in ms. */
-const AI_MOVE_DELAY = 550
+const AI_MOVE_DELAY = 900
 
 export interface AppProps {
   /**
@@ -190,6 +190,7 @@ export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) 
           legalTargets={state.legalTargets}
           lastMove={justReset ? null : game.lastMove}
           moveSeq={game.moveCount}
+          seatOrigins={state.seatOrigins}
           onSquareTap={(square) => dispatch({ type: 'tapSquare', square })}
           aliveSeats={game.aliveSeats}
           turn={game.turn}

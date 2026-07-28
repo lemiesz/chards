@@ -48,6 +48,12 @@ export interface BoardProps {
    * should play once for it.
    */
   moveSeq: number
+  /**
+   * The square each seat last moved a piece away from. Each is marked in that
+   * seat's own colour so you can see at a glance where every player came from,
+   * not just whoever moved most recently. Cleared when the board resets.
+   */
+  seatOrigins?: Readonly<Record<Seat, Square | null>>
   /** Fired for every tap/click on any square, including empty ones. */
   onSquareTap: (square: Square) => void
   /** Seats with no pieces left; their edge stripe renders dimmed. */
@@ -65,12 +71,19 @@ export function Board({
   legalTargets,
   lastMove,
   moveSeq,
+  seatOrigins,
   onSquareTap,
   aliveSeats,
   turn,
   disabled = false,
 }: BoardProps): JSX.Element {
   const cells: JSX.Element[] = []
+
+  // The seat that made the most recent move owns the piece now standing on its
+  // destination square, so its colour comes straight off the board.
+  const moverSeat = lastMove
+    ? (board[lastMove.to.row][lastMove.to.col]?.owner ?? null)
+    : null
 
   for (let row = 0; row < BOARD_SIZE; row++) {
     for (let col = 0; col < BOARD_SIZE; col++) {
@@ -84,6 +97,12 @@ export function Board({
           ? 'capture'
           : 'move'
         : 'none'
+
+      const originSeat =
+        SEAT_ORDER.find((seat) => {
+          const origin = seatOrigins?.[seat]
+          return origin ? sameSquare(origin, square) : false
+        }) ?? null
 
       let lastMoveState: LastMoveState = 'none'
       let slide: SlideDelta | null = null
@@ -113,6 +132,7 @@ export function Board({
           isSelected={isSelected}
           targetState={targetState}
           lastMoveState={lastMoveState}
+          markerSeat={lastMoveState === 'to' ? moverSeat : originSeat}
           slide={slide}
           moveSeq={moveSeq}
           onTap={onSquareTap}

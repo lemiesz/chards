@@ -4,7 +4,7 @@
  * engine — this reducer only translates taps into engine calls.
  */
 
-import type { GameState, Move, Square } from '../engine/types'
+import type { GameState, Move, Seat, Square } from '../engine/types'
 import { sameSquare, pieceAt } from '../engine/types'
 import { newGame } from '../engine/setup'
 import { legalMoves } from '../engine/moves'
@@ -22,6 +22,30 @@ export interface AppState {
   readonly rulesReturnTo: Screen
   /** Which seats the computer plays; `null` for a seat means a human. */
   readonly aiSeats: AiConfig
+  /**
+   * The square each seat last moved a piece away from, for the per-seat
+   * last-move markers. Cleared whenever an elimination resets the board, since
+   * every piece is re-placed and the old origins mean nothing.
+   */
+  readonly seatOrigins: Readonly<Record<Seat, Square | null>>
+}
+
+const NO_ORIGINS: Readonly<Record<Seat, Square | null>> = {
+  S: null,
+  W: null,
+  N: null,
+  E: null,
+}
+
+/** Records the mover's origin square, or wipes them all if the board reset. */
+function trackOrigin(
+  origins: Readonly<Record<Seat, Square | null>>,
+  mover: Seat,
+  move: Move,
+  next: GameState,
+): Readonly<Record<Seat, Square | null>> {
+  if (next.events.some((event) => event.type === 'reset')) return NO_ORIGINS
+  return { ...origins, [mover]: move.from }
 }
 
 export type Action =
@@ -42,6 +66,7 @@ export const initialAppState: AppState = {
   legalTargets: [],
   rulesReturnTo: 'home',
   aiSeats: ALL_HUMAN_CONFIG,
+  seatOrigins: NO_ORIGINS,
 }
 
 function screenForPhase(game: GameState): Screen {
@@ -61,6 +86,7 @@ export function gameReducer(state: AppState, action: Action): AppState {
         selected: null,
         legalTargets: [],
         aiSeats: action.aiSeats ?? state.aiSeats,
+        seatOrigins: NO_ORIGINS,
       }
     }
 
@@ -77,6 +103,7 @@ export function gameReducer(state: AppState, action: Action): AppState {
         selected: null,
         legalTargets: [],
         aiSeats: action.aiSeats ?? state.aiSeats,
+        seatOrigins: NO_ORIGINS,
       }
     }
 
@@ -88,6 +115,7 @@ export function gameReducer(state: AppState, action: Action): AppState {
       // Guard against a stale move arriving from an AI timer that fired after
       // the position already changed.
       if (!canApply(game, action.move)) return state
+      const mover = game.turn
       const next = applyMove(game, action.move)
       return {
         ...state,
@@ -95,6 +123,7 @@ export function gameReducer(state: AppState, action: Action): AppState {
         selected: null,
         legalTargets: [],
         screen: screenForPhase(next),
+        seatOrigins: trackOrigin(state.seatOrigins, mover, action.move, next),
       }
     }
 
@@ -119,13 +148,16 @@ export function gameReducer(state: AppState, action: Action): AppState {
         state.selected &&
         state.legalTargets.some((t) => sameSquare(t, square))
       ) {
-        const next = applyMove(game, { from: state.selected, to: square })
+        const move = { from: state.selected, to: square }
+        const mover = game.turn
+        const next = applyMove(game, move)
         return {
           ...state,
           game: next,
           selected: null,
           legalTargets: [],
           screen: screenForPhase(next),
+          seatOrigins: trackOrigin(state.seatOrigins, mover, move, next),
         }
       }
 

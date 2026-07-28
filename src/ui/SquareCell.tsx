@@ -55,6 +55,11 @@ export interface SquareCellProps {
   isSelected: boolean
   targetState: TargetState
   lastMoveState: LastMoveState
+  /**
+   * Seat whose colour this square's last-move marker takes: the mover on a
+   * destination square, or the seat that moved away from an origin square.
+   */
+  markerSeat?: Seat | null
   /** Set only on the destination square of a fresh move; drives the slide-in animation. */
   slide: SlideDelta | null
   /**
@@ -78,6 +83,7 @@ export function SquareCell({
   isSelected,
   targetState,
   lastMoveState,
+  markerSeat = null,
   slide,
   moveSeq,
   onTap,
@@ -116,9 +122,17 @@ export function SquareCell({
       data-edge-seat={edgeSeat ?? undefined}
       data-edge-alive={edgeSeat ? edgeAlive : undefined}
       data-edge-active={edgeSeat ? edgeActive : undefined}
+      data-marker-seat={markerSeat ?? undefined}
       disabled={disabled}
       onClick={() => onTap(square)}
     >
+      {markerSeat && lastMoveState !== 'to' ? (
+        <span
+          className="square__origin"
+          data-seat={markerSeat}
+          aria-hidden="true"
+        />
+      ) : null}
       {piece ? (
         <div
           // Keying on `moveSeq` only while sliding means the slot remounts
