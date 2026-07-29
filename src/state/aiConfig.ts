@@ -17,6 +17,31 @@ export const AI_LEVEL_LABELS: Readonly<Record<AiLevel, string>> = {
   hard: 'Hard',
 }
 
+/**
+ * How long a computer seat pauses before playing. "Relaxed" is long enough to
+ * follow what happened; "fast" is for watching computers play each other or
+ * pushing through a game quickly.
+ */
+export type AiPace = 'fast' | 'relaxed'
+
+export const AI_PACES: readonly AiPace[] = ['relaxed', 'fast']
+
+export const AI_PACE_LABELS: Readonly<Record<AiPace, string>> = {
+  relaxed: 'Relaxed',
+  fast: 'Fast',
+}
+
+export const AI_PACE_DELAY_MS: Readonly<Record<AiPace, number>> = {
+  relaxed: 900,
+  fast: 120,
+}
+
+export const DEFAULT_AI_PACE: AiPace = 'relaxed'
+
+export function parseAiPace(value: unknown): AiPace | null {
+  return value === 'fast' || value === 'relaxed' ? value : null
+}
+
 /** Default: you take South, the computer plays the other three seats. */
 export const DEFAULT_AI_CONFIG: AiConfig = {
   S: null,

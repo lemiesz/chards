@@ -70,7 +70,7 @@ await new Promise((r) => setTimeout(r, 250))
 // This script drives the game by hand, so put every seat under human control
 // first — otherwise a computer seat locks the board while it takes its turn.
 await page.evaluate(() => {
-  for (const row of document.querySelectorAll('.seat-setup__row')) {
+  for (const row of document.querySelectorAll('.seat-setup__row[data-seat]')) {
     const human = [...row.querySelectorAll('.seat-setup__choice')].find(
       (b) => b.textContent.trim() === 'You',
     )
@@ -80,7 +80,7 @@ await page.evaluate(() => {
 check(
   'all four seats can be set to human',
   await page.evaluate(() =>
-    [...document.querySelectorAll('.seat-setup__row')].every((row) =>
+    [...document.querySelectorAll('.seat-setup__row[data-seat]')].every((row) =>
       [...row.querySelectorAll('.seat-setup__choice')].some(
         (b) =>
           b.getAttribute('data-active') === 'true' &&

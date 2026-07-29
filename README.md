@@ -109,8 +109,12 @@ PLAN.md §1 — change the spec first if you want them different:
 - The king is an ordinary piece: no check, no checkmate, no castling.
 - Pawns move away from their own edge; no two-square first move, no en passant;
   they promote to Queen on the far edge, and promotion survives board resets.
+- Each player is a suit (South ♠, West ♥, North ♣, East ♦) and deals from their
+  own deck: 13 cards with one standard deck, 26 with two. The number of decks is
+  chosen on the Home screen. All four players can hold the same rank, and with
+  two decks a player can draw the same card twice.
 - On a board reset, survivors re-place pieces ascending by card value, ties
-  broken by suit ♣ < ♦ < ♥ < ♠.
+  broken by the order the cards were drawn.
 - A seat with no legal move is skipped; a full round of skips is a draw.
 - After a reset, play continues clockwise from the seat that made the
   eliminating capture.

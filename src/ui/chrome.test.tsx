@@ -36,6 +36,7 @@ function piece(id: string, owner: Seat, rank: Rank, suit: Suit = 'C'): Piece {
     card: card(rank, suit),
     pieceType: pieceTypeFor(rank),
     promoted: false,
+    drawIndex: 0,
   }
 }
 
@@ -57,6 +58,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     board: emptyBoard(),
     turn: 'S',
     aliveSeats: ['S', 'W', 'N', 'E'],
+    deckCount: 1,
     phase: 'playing',
     winner: null,
     captures: [],
@@ -367,12 +369,16 @@ describe('Home: seat setup', () => {
     await user.click(screen.getByRole('button', { name: /new game/i }))
 
     expect(onNewGame).toHaveBeenCalledTimes(1)
-    expect(onNewGame).toHaveBeenCalledWith({
-      S: null,
-      W: 'normal',
-      N: 'hard',
-      E: 'normal',
-    })
+    expect(onNewGame).toHaveBeenCalledWith(
+      {
+        S: null,
+        W: 'normal',
+        N: 'hard',
+        E: 'normal',
+      },
+      'relaxed',
+      1,
+    )
   })
 })
 

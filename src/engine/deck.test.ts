@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { buildDeck, shuffle, makeRng, deal } from './deck'
-import { cardKey, SEAT_ORDER } from './types'
+import {
+  buildDeck,
+  buildSuitDeck,
+  shuffle,
+  makeRng,
+  deal,
+  DECK_COUNTS,
+  type DeckCount,
+} from './deck'
+import { cardKey, RANKS, SEAT_SUITS, SEAT_ORDER } from './types'
 
 describe('buildDeck', () => {
   it('has 52 distinct cards', () => {
@@ -77,27 +85,107 @@ describe('shuffle', () => {
   })
 })
 
-describe('deal', () => {
-  it('gives each seat 6 distinct cards, 24 distinct overall', () => {
-    const hands = deal(makeRng(5))
-    for (const seat of SEAT_ORDER) {
-      expect(hands[seat]).toHaveLength(6)
-      const keys = new Set(hands[seat].map(cardKey))
-      expect(keys.size).toBe(6)
-    }
-    const allKeys = SEAT_ORDER.flatMap((seat) => hands[seat].map(cardKey))
-    expect(new Set(allKeys).size).toBe(24)
+describe('buildSuitDeck', () => {
+  it('has 13 cards, all of the given suit, for 1 deck', () => {
+    const deck = buildSuitDeck('C', 1)
+    expect(deck).toHaveLength(13)
+    expect(deck.every((c) => c.suit === 'C')).toBe(true)
+    expect(new Set(deck.map(cardKey)).size).toBe(13)
   })
 
-  it('same seed deals the same hands', () => {
-    const a = deal(makeRng(11))
-    const b = deal(makeRng(11))
+  it('has 26 cards, two of each rank, for 2 decks', () => {
+    const deck = buildSuitDeck('H', 2)
+    expect(deck).toHaveLength(26)
+    expect(deck.every((c) => c.suit === 'H')).toBe(true)
+    const counts = new Map<string, number>()
+    for (const card of deck) {
+      counts.set(card.rank, (counts.get(card.rank) ?? 0) + 1)
+    }
+    expect(counts.size).toBe(13)
+    for (const count of counts.values()) expect(count).toBe(2)
+  })
+})
+
+describe('DECK_COUNTS', () => {
+  it('is [1, 2]', () => {
+    expect(DECK_COUNTS).toEqual([1, 2])
+  })
+})
+
+describe('deal', () => {
+  it.each(DECK_COUNTS)(
+    "gives each seat 6 cards containing ONLY that seat's own suit (deckCount=%i)",
+    (deckCount: DeckCount) => {
+      const hands = deal(makeRng(5), deckCount)
+      for (const seat of SEAT_ORDER) {
+        expect(hands[seat]).toHaveLength(6)
+        expect(hands[seat].every((c) => c.suit === SEAT_SUITS[seat])).toBe(
+          true,
+        )
+      }
+    },
+  )
+
+  it('with 1 deck, a seat is always dealt 6 distinct ranks (no duplicates possible)', () => {
+    for (let seed = 0; seed < 300; seed++) {
+      const hands = deal(makeRng(seed), 1)
+      for (const seat of SEAT_ORDER) {
+        const ranks = hands[seat].map((c) => c.rank)
+        expect(new Set(ranks).size).toBe(ranks.length)
+      }
+    }
+  })
+
+  it('with 2 decks, a seat can be dealt the same rank twice, and it deals correctly', () => {
+    for (let seed = 0; seed < 500; seed++) {
+      const hands = deal(makeRng(seed), 2)
+      for (const seat of SEAT_ORDER) {
+        const hand = hands[seat]
+        const ranks = hand.map((c) => c.rank)
+        const dupeRank = ranks.find((r, i) => ranks.indexOf(r) !== i)
+        if (dupeRank === undefined) continue
+
+        // Found a duplicate: assert it deals correctly -- the hand is still
+        // 6 cards, the duplicates are both the seat's own suit, and both
+        // copies are otherwise identical cards (as expected from a 2-deck
+        // personal deck, PLAN.md §1.2).
+        expect(hand).toHaveLength(6)
+        const dupes = hand.filter((c) => c.rank === dupeRank)
+        expect(dupes.length).toBeGreaterThanOrEqual(2)
+        for (const card of dupes) expect(card.suit).toBe(SEAT_SUITS[seat])
+        return
+      }
+    }
+    throw new Error('expected at least one duplicate rank within 500 seeds')
+  })
+
+  it('it is possible for all four seats to hold the same rank simultaneously', () => {
+    let allFour = false
+    for (let seed = 0; seed < 500 && !allFour; seed++) {
+      const hands = deal(makeRng(seed), 1)
+      const rankSets = SEAT_ORDER.map(
+        (seat) => new Set(hands[seat].map((c) => c.rank)),
+      )
+      allFour = RANKS.some((rank) => rankSets.every((set) => set.has(rank)))
+    }
+    expect(allFour).toBe(true)
+  })
+
+  it('same seed + same deckCount deals the same hands', () => {
+    const a = deal(makeRng(11), 1)
+    const b = deal(makeRng(11), 1)
     expect(a).toEqual(b)
   })
 
   it('different seeds deal different hands', () => {
-    const a = deal(makeRng(11))
-    const b = deal(makeRng(12))
+    const a = deal(makeRng(11), 1)
+    const b = deal(makeRng(12), 1)
+    expect(a).not.toEqual(b)
+  })
+
+  it('same seed but different deckCount deals a different hand', () => {
+    const a = deal(makeRng(11), 1)
+    const b = deal(makeRng(11), 2)
     expect(a).not.toEqual(b)
   })
 })

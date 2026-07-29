@@ -30,7 +30,14 @@ function piece(
   promoted = false,
 ): Piece {
   idCounter += 1
-  return { id: `test-${idCounter}`, owner, card, pieceType, promoted }
+  return {
+    id: `test-${idCounter}`,
+    owner,
+    card,
+    pieceType,
+    promoted,
+    drawIndex: idCounter,
+  }
 }
 
 interface Placement {
@@ -64,6 +71,7 @@ function makeState(
     events: [],
     hands: { S: [], W: [], N: [], E: [] },
     seed: null,
+    deckCount: 1,
     ...overrides,
   }
 }

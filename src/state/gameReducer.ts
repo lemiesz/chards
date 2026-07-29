@@ -7,9 +7,15 @@
 import type { GameState, Move, Seat, Square } from '../engine/types'
 import { sameSquare, pieceAt } from '../engine/types'
 import { newGame } from '../engine/setup'
+import type { DeckCount } from '../engine/deck'
 import { legalMoves } from '../engine/moves'
 import { applyMove, canApply } from '../engine/apply'
-import { ALL_HUMAN_CONFIG, type AiConfig } from './aiConfig'
+import {
+  ALL_HUMAN_CONFIG,
+  DEFAULT_AI_PACE,
+  type AiConfig,
+  type AiPace,
+} from './aiConfig'
 
 export type Screen = 'home' | 'deal' | 'game' | 'rules' | 'gameover'
 
@@ -22,6 +28,8 @@ export interface AppState {
   readonly rulesReturnTo: Screen
   /** Which seats the computer plays; `null` for a seat means a human. */
   readonly aiSeats: AiConfig
+  /** How long computer seats pause before moving. */
+  readonly aiPace: AiPace
   /**
    * The square each seat last moved a piece away from, for the per-seat
    * last-move markers. Cleared whenever an elimination resets the board, since
@@ -49,9 +57,20 @@ function trackOrigin(
 }
 
 export type Action =
-  | { type: 'newGame'; seed?: number; aiSeats?: AiConfig }
+  | {
+      type: 'newGame'
+      seed?: number
+      aiSeats?: AiConfig
+      aiPace?: AiPace
+      deckCount?: DeckCount
+    }
   | { type: 'startGame' }
-  | { type: 'resume'; game: GameState; aiSeats?: AiConfig }
+  | {
+      type: 'resume'
+      game: GameState
+      aiSeats?: AiConfig
+      aiPace?: AiPace
+    }
   | { type: 'openRules' }
   | { type: 'closeRules' }
   | { type: 'tapSquare'; square: Square }
@@ -66,6 +85,7 @@ export const initialAppState: AppState = {
   legalTargets: [],
   rulesReturnTo: 'home',
   aiSeats: ALL_HUMAN_CONFIG,
+  aiPace: DEFAULT_AI_PACE,
   seatOrigins: NO_ORIGINS,
 }
 
@@ -76,9 +96,10 @@ function screenForPhase(game: GameState): Screen {
 export function gameReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'newGame': {
-      const game = newGame(
-        action.seed === undefined ? {} : { seed: action.seed },
-      )
+      const game = newGame({
+        ...(action.seed === undefined ? {} : { seed: action.seed }),
+        deckCount: action.deckCount ?? 1,
+      })
       return {
         ...state,
         screen: 'deal',
@@ -86,6 +107,7 @@ export function gameReducer(state: AppState, action: Action): AppState {
         selected: null,
         legalTargets: [],
         aiSeats: action.aiSeats ?? state.aiSeats,
+        aiPace: action.aiPace ?? state.aiPace,
         seatOrigins: NO_ORIGINS,
       }
     }
@@ -103,6 +125,7 @@ export function gameReducer(state: AppState, action: Action): AppState {
         selected: null,
         legalTargets: [],
         aiSeats: action.aiSeats ?? state.aiSeats,
+        aiPace: action.aiPace ?? state.aiPace,
         seatOrigins: NO_ORIGINS,
       }
     }

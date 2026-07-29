@@ -30,7 +30,7 @@ await page.reload({ waitUntil: 'networkidle0' })
 // All four seats to the computer so the game plays itself while we measure.
 await page.waitForSelector('.seat-setup')
 await page.evaluate(() => {
-  for (const row of document.querySelectorAll('.seat-setup__row')) {
+  for (const row of document.querySelectorAll('.seat-setup__row[data-seat]')) {
     ;[...row.querySelectorAll('.seat-setup__choice')]
       .find((b) => b.textContent.trim() === 'Normal')
       ?.click()

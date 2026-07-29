@@ -4,7 +4,7 @@
  * Pure TypeScript, no DOM/React imports (see engine/types.ts architecture rule).
  */
 
-import { deal, makeRng, type Rng } from './deck'
+import { deal, makeRng, type DeckCount, type Rng } from './deck'
 import {
   BOARD_SIZE,
   SEAT_ORDER,
@@ -40,6 +40,7 @@ export function placeHands(hands: Record<Seat, readonly Card[]>): Board {
         card,
         pieceType: pieceTypeFor(card.rank),
         promoted: false,
+        drawIndex: i,
       }
       board[slot.row][slot.col] = piece
     }
@@ -144,12 +145,17 @@ export function nextSeat(current: Seat, aliveSeats: readonly Seat[]): Seat {
 // New game
 // ---------------------------------------------------------------------------
 
-export function newGame(options?: { seed?: number; rng?: Rng }): GameState {
+export function newGame(options?: {
+  seed?: number
+  rng?: Rng
+  deckCount?: DeckCount
+}): GameState {
   const seed = options?.seed
   const rng =
     options?.rng ?? (seed !== undefined ? makeRng(seed) : makeRng(Date.now()))
+  const deckCount = options?.deckCount ?? 1
 
-  const hands = deal(rng)
+  const hands = deal(rng, deckCount)
   const board = placeHands(hands)
   const turn = firstSeat(hands, rng)
 
@@ -165,5 +171,6 @@ export function newGame(options?: { seed?: number; rng?: Rng }): GameState {
     events: [],
     hands,
     seed: seed ?? null,
+    deckCount,
   }
 }

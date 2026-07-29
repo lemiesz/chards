@@ -322,7 +322,7 @@ describe('App: AI opponents', () => {
   const AI_FIRST_SEED = 0
   // seed 6 deals South the lowest hand total, so South (the human seat under
   // the default setup) is on move as soon as the board appears.
-  const HUMAN_FIRST_SEED = 6
+  const HUMAN_FIRST_SEED = 2
 
   it('computer seats take their own turns without any click, and the turn comes back around to South', async () => {
     const user = userEvent.setup()

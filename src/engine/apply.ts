@@ -11,7 +11,6 @@ import {
   BOARD_SIZE,
   PROMOTION_EDGE,
   SETUP_SLOTS,
-  SUIT_ORDER,
   pieceAt,
   pointValue,
   type Board,
@@ -63,10 +62,13 @@ export function findSeatPieces(
 
 /**
  * Re-places every surviving seat's on-board pieces onto its own SETUP_SLOTS,
- * slot index 0 upward, sorted ascending by pointValue(card), ties broken by
- * SUIT_ORDER (C < D < H < S). Seats not in `aliveSeats` are left empty.
- * Pieces beyond the 6 available slots (should not happen with a 52-card
- * deck / 6-card hands, but guarded for safety) are dropped.
+ * slot index 0 upward, sorted ascending by pointValue(card). Ties broken by
+ * `drawIndex` (the order the tied cards were originally drawn) — NOT by
+ * suit: every one of a seat's cards is that seat's own suit (PLAN.md §1.2),
+ * so suit can never distinguish them. A value tie is only reachable in a
+ * two-deck game, where a seat can hold the same card twice. Seats not in
+ * `aliveSeats` are left empty. Pieces beyond the 6 available slots (should
+ * not happen with 6-card hands, but guarded for safety) are dropped.
  */
 export function resetBoard(board: Board, aliveSeats: readonly Seat[]): Board {
   const next: (Piece | null)[][] = Array.from({ length: BOARD_SIZE }, () =>
@@ -81,7 +83,7 @@ export function resetBoard(board: Board, aliveSeats: readonly Seat[]): Board {
       .sort((a, b) => {
         const diff = pointValue(a.card) - pointValue(b.card)
         if (diff !== 0) return diff
-        return SUIT_ORDER[a.card.suit] - SUIT_ORDER[b.card.suit]
+        return a.drawIndex - b.drawIndex
       })
 
     const slots = SETUP_SLOTS[seat]

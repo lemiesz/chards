@@ -24,7 +24,13 @@ import {
   type Suit,
 } from './types'
 
-export const SAVE_VERSION = 1
+/**
+ * Bumped to 2 for the personal-deck rules correction (PLAN.md §1.2/§1.6):
+ * `GameState.deckCount` and `Piece.drawIndex` were added, and version-1
+ * saves were dealt under the old shared-52-card-deck rules, so they are
+ * rejected outright rather than mis-loaded (see `isGameState` below).
+ */
+export const SAVE_VERSION = 2
 
 interface SaveFile {
   readonly version: number
@@ -123,8 +129,14 @@ function isPiece(value: unknown): value is Piece {
     isSeat(value.owner) &&
     isCard(value.card) &&
     isPieceType(value.pieceType) &&
-    typeof value.promoted === 'boolean'
+    typeof value.promoted === 'boolean' &&
+    typeof value.drawIndex === 'number' &&
+    Number.isInteger(value.drawIndex)
   )
+}
+
+function isDeckCount(value: unknown): value is 1 | 2 {
+  return value === 1 || value === 2
 }
 
 function isBoard(value: unknown): value is Board {
@@ -215,6 +227,7 @@ function isGameState(value: unknown): value is GameState {
     return false
   if (!isHands(value.hands)) return false
   if (value.seed !== null && typeof value.seed !== 'number') return false
+  if (!isDeckCount(value.deckCount)) return false
 
   return true
 }

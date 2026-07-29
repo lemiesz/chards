@@ -38,6 +38,7 @@ function makePiece(
     pieceType,
     card: { rank: '4', suit: 'C' },
     promoted: false,
+    drawIndex: 0,
     ...overrides,
   }
 }

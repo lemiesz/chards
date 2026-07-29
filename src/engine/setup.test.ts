@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { placeHands, handSum, firstSeat, nextSeat, newGame } from './setup'
 import { makeRng } from './deck'
-import { SEAT_ORDER, type Card, type Seat } from './types'
+import { SEAT_ORDER, SEAT_SUITS, type Card, type Seat } from './types'
 
 /** Builds a 6-card hand from rank/suit shorthand, e.g. ['2C', '3D', ...]. */
 function hand(cards: string[]): Card[] {
@@ -114,6 +114,14 @@ describe('placeHands', () => {
     expect(board[7][4]!.pieceType).toBe('queen')
     expect(board[7][5]!.pieceType).toBe('king')
     expect(board[7][6]!.pieceType).toBe('rook')
+  })
+
+  it('assigns drawIndex matching the order each card was drawn (its slot index)', () => {
+    const board = placeHands(sampleHands())
+    for (let i = 0; i < 6; i++) {
+      expect(board[7][i + 1]!.drawIndex).toBe(i) // South
+      expect(board[i + 1][0]!.drawIndex).toBe(i) // West
+    }
   })
 })
 
@@ -238,5 +246,34 @@ describe('newGame', () => {
   it('sets seed to null when no seed is given', () => {
     const state = newGame()
     expect(state.seed).toBeNull()
+  })
+
+  it('defaults deckCount to 1 when not given', () => {
+    const state = newGame({ seed: 1 })
+    expect(state.deckCount).toBe(1)
+  })
+
+  it('carries an explicit deckCount through, and each seat is dealt only its own suit', () => {
+    const state = newGame({ seed: 1, deckCount: 2 })
+    expect(state.deckCount).toBe(2)
+    for (const seat of SEAT_ORDER) {
+      expect(state.hands[seat]).toHaveLength(6)
+      expect(
+        state.hands[seat].every((card) => card.suit === SEAT_SUITS[seat]),
+      ).toBe(true)
+    }
+  })
+
+  it('same seed + same deckCount produces an identical game', () => {
+    const a = newGame({ seed: 55, deckCount: 2 })
+    const b = newGame({ seed: 55, deckCount: 2 })
+    expect(a).toEqual(b)
+  })
+
+  it('same seed + different deckCount produces a different deal', () => {
+    const a = newGame({ seed: 55, deckCount: 1 })
+    const b = newGame({ seed: 55, deckCount: 2 })
+    expect(a.hands).not.toEqual(b.hands)
+    expect(a.deckCount).not.toBe(b.deckCount)
   })
 })

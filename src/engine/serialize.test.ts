@@ -51,6 +51,43 @@ describe('serialize / deserialize', () => {
     ).toBeNull()
   })
 
+  it('rejects a version-1 save (dealt under the old shared-deck rules) rather than mis-loading it', () => {
+    // A version-1 payload has no `deckCount` (and its pieces have no
+    // `drawIndex`) because it predates the personal-deck rules correction
+    // (PLAN.md §1.2). It must be rejected outright, not silently accepted
+    // with defaults filled in -- that would mean playing out a deal that was
+    // never actually dealt under the current rules.
+    const state = newGame({ seed: 1 })
+    const { deckCount: _deckCount, ...stateWithoutDeckCount } = state
+    const legacyBoard = state.board.map((row) =>
+      row.map((cell) =>
+        cell === null
+          ? null
+          : (() => {
+              const { drawIndex: _drawIndex, ...rest } = cell
+              return rest
+            })(),
+      ),
+    )
+    const v1Save = {
+      version: 1,
+      state: { ...stateWithoutDeckCount, board: legacyBoard },
+    }
+    expect(deserialize(JSON.stringify(v1Save))).toBeNull()
+  })
+
+  it('returns null for a structurally invalid state: bad deckCount', () => {
+    const state = newGame({ seed: 1 })
+    const broken = { ...state, deckCount: 3 }
+    expect(
+      deserialize(JSON.stringify({ version: SAVE_VERSION, state: broken })),
+    ).toBeNull()
+    const missing = { ...state, deckCount: undefined }
+    expect(
+      deserialize(JSON.stringify({ version: SAVE_VERSION, state: missing })),
+    ).toBeNull()
+  })
+
   it('returns null for a structurally invalid state: wrong board shape', () => {
     const state = newGame({ seed: 1 })
     const broken = { ...state, board: [[null, null]] } // not 8x8

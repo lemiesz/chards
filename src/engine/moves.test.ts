@@ -28,7 +28,14 @@ function piece(
   card: Card = { rank: '2', suit: 'C' },
 ): Piece {
   idCounter += 1
-  return { id: `test-${idCounter}`, owner, card, pieceType, promoted: false }
+  return {
+    id: `test-${idCounter}`,
+    owner,
+    card,
+    pieceType,
+    promoted: false,
+    drawIndex: idCounter,
+  }
 }
 
 interface Placement {
@@ -56,6 +63,7 @@ function makeState(pieces: readonly Placement[], turn: Seat = 'S'): GameState {
     events: [],
     hands: { S: [], W: [], N: [], E: [] },
     seed: null,
+    deckCount: 1,
   }
 }
 

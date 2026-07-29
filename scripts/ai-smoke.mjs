@@ -43,7 +43,7 @@ await page.reload({ waitUntil: 'networkidle0' })
 // --- Home seat setup ------------------------------------------------------
 await page.waitForSelector('.seat-setup')
 const defaults = await page.evaluate(() =>
-  [...document.querySelectorAll('.seat-setup__row')].map((row) => ({
+  [...document.querySelectorAll('.seat-setup__row[data-seat]')].map((row) => ({
     seat: row.getAttribute('data-seat'),
     active: [...row.querySelectorAll('.seat-setup__choice')]
       .filter((b) => b.getAttribute('data-active') === 'true')
@@ -87,6 +87,35 @@ const readTurn = () =>
       document.body.innerText.match(/(South|West|North|East) to move/i)?.[1] ??
       null,
   )
+
+// If the human seat was dealt the first turn, play one move for it — the
+// computers cannot take a turn until South has had its own.
+const firstTurn = await readTurn()
+if (firstTurn === 'South') {
+  const own = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-square]')]
+      .filter((s) => (s.getAttribute('aria-label') ?? '').includes('South'))
+      .map((s) => s.getAttribute('data-square')),
+  )
+  for (const key of own) {
+    await page.evaluate((k) => {
+      document.querySelector(`[data-square="${k}"]`)?.click()
+    }, key)
+    const target = await page.evaluate(() => {
+      const t = document.querySelector(
+        '[data-state="target"], [data-state="capture-target"]',
+      )
+      return t ? t.getAttribute('data-square') : null
+    })
+    if (target) {
+      await page.evaluate((k) => {
+        document.querySelector(`[data-square="${k}"]`)?.click()
+      }, target)
+      break
+    }
+  }
+  await sleep(100)
+}
 
 // Wait for a CPU seat to be on move and confirm the UI says so.
 let sawThinking = false
@@ -140,15 +169,21 @@ await page.evaluate(() => localStorage.clear())
 await page.goto(BASE, { waitUntil: 'networkidle0' })
 await page.waitForSelector('.seat-setup')
 await page.evaluate(() => {
-  for (const row of document.querySelectorAll('.seat-setup__row')) {
+  for (const row of document.querySelectorAll('.seat-setup__row[data-seat]')) {
     const hardest = [...row.querySelectorAll('.seat-setup__choice')].find(
       (b) => b.textContent.trim() === 'Hard',
     )
     hardest?.click()
   }
+  // Fast pace: a four-computer Hard game averages ~170 moves, which at the
+  // relaxed pace would take longer than this check's deadline.
+  const paceRow = document.querySelector('.seat-setup__row[data-row="pace"]')
+  ;[...(paceRow?.querySelectorAll('.seat-setup__choice') ?? [])]
+    .find((b) => b.textContent.trim() === 'Fast')
+    ?.click()
 })
 const allCpu = await page.evaluate(() =>
-  [...document.querySelectorAll('.seat-setup__row')].every((row) =>
+  [...document.querySelectorAll('.seat-setup__row[data-seat]')].every((row) =>
     [...row.querySelectorAll('.seat-setup__choice')].some(
       (b) =>
         b.getAttribute('data-active') === 'true' &&

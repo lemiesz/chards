@@ -14,14 +14,14 @@ import {
   clearSave,
   saveAiConfig,
   loadAiConfig,
+  saveAiPace,
+  loadAiPace,
 } from './state/persistence'
+import { AI_PACE_DELAY_MS } from './state/aiConfig'
 import { pieceCounts } from './engine/apply'
 import { chooseMove } from './engine/ai'
 import { SEAT_NAMES, type GameState } from './engine/types'
 import './ui/app.css'
-
-/** How long a computer seat "thinks" before its move appears, in ms. */
-const AI_MOVE_DELAY = 900
 
 export interface AppProps {
   /**
@@ -30,11 +30,14 @@ export interface AppProps {
    * assert against it. Left undefined in production.
    */
   seed?: number
-  /** Test-only seam: shortens the computer's thinking pause. */
+  /**
+   * Test-only seam: overrides the pause a computer seat takes before moving.
+   * In normal use this comes from the pace chosen on the Home screen.
+   */
   aiDelayMs?: number
 }
 
-export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) {
+export default function App({ seed, aiDelayMs }: AppProps = {}) {
   const [state, dispatch] = useReducer(gameReducer, initialAppState)
   const [savedGame, setSavedGame] = useState<GameState | null>(() => loadGame())
 
@@ -45,16 +48,18 @@ export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) 
     if (game.phase === 'playing') {
       saveGame(game)
       saveAiConfig(state.aiSeats)
+      saveAiPace(state.aiPace)
     } else {
       clearSave()
       setSavedGame(null)
     }
-  }, [state.game, state.aiSeats])
+  }, [state.game, state.aiSeats, state.aiPace])
 
   const game = state.game
   const aiLevel =
     game && game.phase === 'playing' ? state.aiSeats[game.turn] : null
   const aiToMove = state.screen === 'game' && aiLevel !== null
+  const moveDelay = aiDelayMs ?? AI_PACE_DELAY_MS[state.aiPace]
 
   // A computer seat takes its turn after a short pause, so a human watching can
   // see what happened instead of the board jumping several moves at once.
@@ -67,12 +72,12 @@ export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) 
       // A seat with no legal move is skipped by the engine, so `null` here just
       // means there is nothing to do.
       if (move) dispatch({ type: 'playMove', move })
-    }, aiDelayMs)
+    }, moveDelay)
     return () => {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [game, aiToMove, aiLevel, aiDelayMs])
+  }, [game, aiToMove, aiLevel, moveDelay])
 
   const counts = useMemo(
     () => (state.game ? pieceCounts(state.game.board) : null),
@@ -98,10 +103,10 @@ export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) 
       <main className="app app--screen">
         <Home
           hasSave={savedGame !== null}
-          onNewGame={(aiSeats) => {
+          onNewGame={(aiSeats, aiPace, deckCount) => {
             clearSave()
             setSavedGame(null)
-            dispatch({ type: 'newGame', seed, aiSeats })
+            dispatch({ type: 'newGame', seed, aiSeats, aiPace, deckCount })
           }}
           onResume={() => {
             const saved = loadGame()
@@ -110,6 +115,7 @@ export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) 
                 type: 'resume',
                 game: saved,
                 aiSeats: loadAiConfig() ?? undefined,
+                aiPace: loadAiPace() ?? undefined,
               })
             } else {
               setSavedGame(null)
@@ -138,7 +144,9 @@ export default function App({ seed, aiDelayMs = AI_MOVE_DELAY }: AppProps = {}) 
       <main className="app app--screen">
         <GameOver
           winner={game.winner}
-          onRematch={() => dispatch({ type: 'newGame', seed })}
+          onRematch={() =>
+            dispatch({ type: 'newGame', seed, deckCount: game.deckCount })
+          }
           onHome={() => dispatch({ type: 'goHome' })}
         />
       </main>

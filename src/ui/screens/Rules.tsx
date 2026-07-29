@@ -24,10 +24,16 @@ export function Rules({ onBack }: RulesProps): JSX.Element {
         <section className="rules-section">
           <h2>Setup</h2>
           <p>
-            Four players sit one per edge: South, West, North, East. A standard
-            52-card deck is shuffled and each player is dealt 6 cards, placed in
+            Four players sit one per edge, and each player is a suit: South ♠,
+            West ♥, North ♣, East ♦. Every player deals from their own deck —
+            all the cards of their suit — so with one standard deck that is 13
+            cards each, and with two decks 26 each.
+          </p>
+          <p>
+            Each player shuffles their own deck, draws 6, and places them in
             draw order into the 6 center slots of their own back row. The 4
-            board corners are always empty.
+            board corners are always empty. All four players can hold the same
+            rank; with two decks a player can even draw the same card twice.
           </p>
         </section>
 

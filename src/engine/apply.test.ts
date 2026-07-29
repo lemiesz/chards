@@ -33,9 +33,17 @@ function piece(
   pieceType: PieceType,
   card: Card = { rank: '2', suit: 'C' },
   promoted = false,
+  drawIndex?: number,
 ): Piece {
   idCounter += 1
-  return { id: `test-${idCounter}`, owner, card, pieceType, promoted }
+  return {
+    id: `test-${idCounter}`,
+    owner,
+    card,
+    pieceType,
+    promoted,
+    drawIndex: drawIndex ?? idCounter,
+  }
 }
 
 interface Placement {
@@ -70,6 +78,7 @@ function makeState(
     events: [],
     hands: { S: [], W: [], N: [], E: [] },
     seed: null,
+    deckCount: 1,
     ...overrides,
   }
 }
@@ -307,14 +316,34 @@ describe('applyMove: promotion', () => {
 // ---------------------------------------------------------------------------
 
 describe('applyMove: elimination + reset', () => {
-  it('resets a 6-piece survivor onto SETUP_SLOTS ascending by value, C<D<H<S tie-break', () => {
+  it('resets a 6-piece survivor onto SETUP_SLOTS ascending by value, ties broken by original draw order', () => {
     const sRook = piece('S', 'rook', { rank: '10', suit: 'S' })
     const wPawn = piece('W', 'pawn', { rank: '4', suit: 'D' }) // W's only piece
+    // N's cards are all suit C (North deals Clubs) -- with 2 decks a seat can
+    // draw the same card twice (PLAN.md §1.2), so two 5C pieces is valid.
     const nAc = piece('N', 'bishop', { rank: 'A', suit: 'C' }) // value 1
-    const n2d = piece('N', 'pawn', { rank: '2', suit: 'D' }) // value 2
-    const n5c = piece('N', 'pawn', { rank: '5', suit: 'C' }) // value 5, club
-    const n5h = piece('N', 'pawn', { rank: '5', suit: 'H' }) // value 5, heart
-    const n9s = piece('N', 'pawn', { rank: '9', suit: 'S' }) // value 9
+    const n2c = piece('N', 'pawn', { rank: '2', suit: 'C' }) // value 2
+    // Deliberately placed on the board in the OPPOSITE order from their
+    // drawIndex, and given ids that sort the "wrong" way alphabetically, so
+    // this assertion only passes if resetBoard genuinely tie-breaks on
+    // `drawIndex` -- not on array/insertion/id order.
+    const n5cDrawnSecond: Piece = {
+      id: 'n-dup-b',
+      owner: 'N',
+      card: { rank: '5', suit: 'C' },
+      pieceType: 'pawn',
+      promoted: false,
+      drawIndex: 5,
+    }
+    const n5cDrawnFirst: Piece = {
+      id: 'n-dup-a',
+      owner: 'N',
+      card: { rank: '5', suit: 'C' },
+      pieceType: 'pawn',
+      promoted: false,
+      drawIndex: 2,
+    }
+    const n9c = piece('N', 'pawn', { rank: '9', suit: 'C' }) // value 9
     const nQc = piece('N', 'queen', { rank: 'Q', suit: 'C' }) // value 12
 
     const state = makeState(
@@ -322,10 +351,10 @@ describe('applyMove: elimination + reset', () => {
         { square: sq(4, 4), piece: sRook },
         { square: sq(4, 0), piece: wPawn },
         { square: sq(3, 1), piece: nAc },
-        { square: sq(3, 2), piece: n2d },
-        { square: sq(3, 3), piece: n5c },
-        { square: sq(3, 4), piece: n5h },
-        { square: sq(3, 5), piece: n9s },
+        { square: sq(3, 2), piece: n2c },
+        { square: sq(3, 3), piece: n5cDrawnSecond },
+        { square: sq(3, 4), piece: n5cDrawnFirst },
+        { square: sq(3, 5), piece: n9c },
         { square: sq(3, 6), piece: nQc },
       ],
       { turn: 'S', aliveSeats: ['S', 'W', 'N'] },
@@ -344,13 +373,14 @@ describe('applyMove: elimination + reset', () => {
     const sSlots = SETUP_SLOTS.S
     expect(next.board[sSlots[0].row][sSlots[0].col]).toEqual(sRook)
 
-    // N: 6 pieces sorted ascending by pointValue, ties broken C<D<H<S.
+    // N: 6 pieces sorted ascending by pointValue, the 5C/5C tie broken by
+    // drawIndex (lower drawIndex -- drawn earlier -- sorts first).
     const nSlots = SETUP_SLOTS.N
     expect(next.board[nSlots[0].row][nSlots[0].col]).toEqual(nAc)
-    expect(next.board[nSlots[1].row][nSlots[1].col]).toEqual(n2d)
-    expect(next.board[nSlots[2].row][nSlots[2].col]).toEqual(n5c)
-    expect(next.board[nSlots[3].row][nSlots[3].col]).toEqual(n5h)
-    expect(next.board[nSlots[4].row][nSlots[4].col]).toEqual(n9s)
+    expect(next.board[nSlots[1].row][nSlots[1].col]).toEqual(n2c)
+    expect(next.board[nSlots[2].row][nSlots[2].col]).toEqual(n5cDrawnFirst)
+    expect(next.board[nSlots[3].row][nSlots[3].col]).toEqual(n5cDrawnSecond)
+    expect(next.board[nSlots[4].row][nSlots[4].col]).toEqual(n9c)
     expect(next.board[nSlots[5].row][nSlots[5].col]).toEqual(nQc)
 
     // Full-board assertion: exactly 7 pieces remain (1 + 6), nothing stray.

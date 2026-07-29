@@ -25,10 +25,26 @@ This section is the source of truth. If code and this spec disagree, the spec wi
 
 ### 1.2 Setup
 
-1. Shuffle a standard 52-card deck.
-2. Each player draws 6 cards (24 cards dealt total; rest of deck unused).
-3. Cards are placed **in the order drawn** into slots 1→6 of the player's back row.
-4. Duplicated ranks across (and within) hands are normal — e.g., a player may hold two 5s.
+**Each player is a suit, and deals from their own deck.** Players do not share one
+shuffled deck.
+
+| Player | Suit |
+|---|---|
+| South | ♠ Spades |
+| West | ♥ Hearts |
+| North | ♣ Clubs |
+| East | ♦ Diamonds |
+
+1. Before dealing, players choose **how many standard 52-card decks** the game
+   uses (1 or 2).
+2. Each player's personal deck is every card of their suit across those decks:
+   **13 cards with one deck, 26 with two** (two copies of each rank).
+3. Each player shuffles their own deck and draws 6 cards from it.
+4. Cards are placed **in the order drawn** into slots 1→6 of the player's back row.
+5. Consequences worth knowing:
+   - Every player can hold the same rank — all four may have a King.
+   - With **one** deck a player's six cards are six *different* ranks.
+   - With **two** decks a player may draw the same card twice (e.g. two 5♠).
 
 ### 1.3 Card → Piece mapping
 
@@ -63,7 +79,7 @@ Standard chess movement rules, with these clarifications:
 
 - A player who loses their last piece is **eliminated immediately**.
 - The eliminating move completes, then **the board resets**:
-  - Every surviving player collects their still-alive pieces and re-places them on their own back-row slots, **slot 1 → slot 6, in ascending point value** (A=1 … K=13). Ties in value are ordered by suit: ♣ < ♦ < ♥ < ♠ (deterministic).
+  - Every surviving player collects their still-alive pieces and re-places them on their own back-row slots, **slot 1 → slot 6, in ascending point value** (A=1 … K=13). Ties in value are broken by the order the cards were originally drawn, which is deterministic. (Since every one of a player's cards is their own suit, a tie is only possible in a two-deck game, where a player can hold the same card twice.)
   - A player with fewer than 6 pieces fills slots starting at slot 1; remaining slots stay empty.
   - Eliminated players' edges stay empty.
 - After a reset, play continues **clockwise from the player who made the eliminating capture** (i.e., next surviving player after them). It is not possible to eliminate two players with one move.
@@ -76,7 +92,7 @@ The game ends when only one player has pieces remaining. That player wins.
 
 1. No pawn double-move / en passant (pawns start on back row).
 2. Pawn promotes to Queen automatically at the far edge; promotion survives resets.
-3. Reset tie-break by suit ♣<♦<♥<♠; first-player tie-break by lowest-card comparison then random.
+3. Reset tie-break by original draw order (suit cannot break a tie — a player's cards are all one suit); first-player tie-break by lowest-card comparison then random.
 4. No-legal-move = skip turn; full skipped round = draw.
 5. Turn after a reset passes clockwise from the eliminator.
 

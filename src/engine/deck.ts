@@ -4,7 +4,15 @@
  * Pure TypeScript, no DOM/React imports (see engine/types.ts architecture rule).
  */
 
-import { RANKS, SUITS, type Card, type Seat } from './types'
+import {
+  RANKS,
+  SEAT_ORDER,
+  SEAT_SUITS,
+  SUITS,
+  type Card,
+  type Seat,
+  type Suit,
+} from './types'
 
 // ---------------------------------------------------------------------------
 // RNG
@@ -43,6 +51,26 @@ export function buildDeck(): Card[] {
   return deck
 }
 
+/** How many standard 52-card decks a game combines (PLAN.md §1.2). */
+export type DeckCount = 1 | 2
+
+export const DECK_COUNTS: readonly DeckCount[] = [1, 2]
+
+/**
+ * A player's personal deck: every card of `suit` across `deckCount` standard
+ * decks (13 cards for 1 deck, 26 — two of each rank — for 2). Ordered
+ * rank-major, then by deck copy, so `shuffle` sees a deterministic input.
+ */
+export function buildSuitDeck(suit: Suit, deckCount: DeckCount): Card[] {
+  const deck: Card[] = []
+  for (let copy = 0; copy < deckCount; copy++) {
+    for (const rank of RANKS) {
+      deck.push({ rank, suit })
+    }
+  }
+  return deck
+}
+
 /** Pure Fisher-Yates shuffle. Returns a new array; never mutates `items`. */
 export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   const result = items.slice()
@@ -60,20 +88,23 @@ export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Shuffles a fresh 52-card deck and deals 6 cards to each seat.
+ * Deals 6 cards to each seat FROM ITS OWN PERSONAL DECK (PLAN.md §1.2) —
+ * there is no shared 52-card deck players draw from together. Each seat's
+ * personal deck is every card of its suit (`SEAT_SUITS`) across `deckCount`
+ * standard decks: 13 cards for 1 deck (six distinct ranks dealt), 26 for 2
+ * decks (two of each rank, so a duplicate rank can be dealt).
  *
- * Deal order: one round-robin pass in S, W, N, E order, drawing from the top
- * of the shuffled deck, repeated 6 times (i.e. deck[0]->S, deck[1]->W,
- * deck[2]->N, deck[3]->E, deck[4]->S, ...). Each seat's hand is in draw
- * order. 24 cards are dealt; the remaining 28 are unused.
+ * Every seat shuffles its own deck with the SAME shared `rng`, consumed in a
+ * fixed, deterministic seat order (S, W, N, E) so a given seed always
+ * produces the same overall deal. Each seat's hand is in the order it drew
+ * its own cards, top of its own shuffled deck first.
  */
-export function deal(rng: Rng): Record<Seat, Card[]> {
-  const deck = shuffle(buildDeck(), rng)
-  const seats: readonly Seat[] = ['S', 'W', 'N', 'E']
+export function deal(rng: Rng, deckCount: DeckCount): Record<Seat, Card[]> {
   const hands: Record<Seat, Card[]> = { S: [], W: [], N: [], E: [] }
-  for (let i = 0; i < 24; i++) {
-    const seat = seats[i % 4]
-    hands[seat].push(deck[i])
+  for (const seat of SEAT_ORDER) {
+    const suitDeck = buildSuitDeck(SEAT_SUITS[seat], deckCount)
+    const shuffled = shuffle(suitDeck, rng)
+    hands[seat] = shuffled.slice(0, 6)
   }
   return hands
 }

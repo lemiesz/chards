@@ -8,6 +8,12 @@
  * Coordinates are (row, col) with row 0 = North edge and col 0 = West edge.
  */
 
+// Type-only import: `DeckCount` conceptually belongs with deck-building, but
+// `GameState` needs to carry it. This is erased at compile time so it does
+// not create a runtime circular dependency with `./deck` (which imports
+// value-level `Card`/`Seat` from this module).
+import type { DeckCount } from './deck'
+
 // ---------------------------------------------------------------------------
 // Cards
 // ---------------------------------------------------------------------------
@@ -41,14 +47,6 @@ export const RANKS: readonly Rank[] = [
   'K',
 ]
 
-/** Ascending suit strength used only for deterministic reset ordering. */
-export const SUIT_ORDER: Readonly<Record<Suit, number>> = {
-  C: 0,
-  D: 1,
-  H: 2,
-  S: 3,
-}
-
 // ---------------------------------------------------------------------------
 // Pieces
 // ---------------------------------------------------------------------------
@@ -68,6 +66,22 @@ export const SEAT_NAMES: Readonly<Record<Seat, string>> = {
   E: 'East',
 }
 
+/**
+ * Each player IS a suit and deals from their own personal deck (PLAN.md
+ * §1.2): South/Spades, West/Hearts, North/Clubs, East/Diamonds.
+ *
+ * NOTE the unfortunate collision: seat `'S'` means South, but suit `'S'`
+ * means Spades. They are different types (`Seat` vs `Suit`) that happen to
+ * share a letter only for South/Spades. Always go through `SEAT_SUITS`
+ * rather than assuming a seat's letter is its suit.
+ */
+export const SEAT_SUITS: Readonly<Record<Seat, Suit>> = {
+  S: 'S', // South deals Spades
+  W: 'H', // West deals Hearts
+  N: 'C', // North deals Clubs
+  E: 'D', // East deals Diamonds
+}
+
 export interface Piece {
   /** Stable unique id, e.g. "S-0". Never reused within a game. */
   readonly id: string
@@ -80,6 +94,15 @@ export interface Piece {
   readonly pieceType: PieceType
   /** True once a pawn has promoted. Survives board resets. */
   readonly promoted: boolean
+  /**
+   * Index (0-5) of this piece's card in the order its owner originally drew
+   * their hand. `{rank, suit}` is NOT a unique key once a game uses 2 decks
+   * (a seat's own suit can repeat), so this is the explicit, deterministic
+   * field board-reset ordering ties break on (PLAN.md §1.6) instead of
+   * suit — every one of a seat's cards is that seat's own suit, so suit can
+   * never distinguish them anyway. Survives promotion and resets unchanged.
+   */
+  readonly drawIndex: number
 }
 
 // ---------------------------------------------------------------------------
@@ -148,6 +171,8 @@ export interface GameState {
   readonly hands: Readonly<Record<Seat, readonly Card[]>>
   /** Seed used to deal this game, when one was supplied. */
   readonly seed: number | null
+  /** How many standard decks were combined into each seat's personal deck (PLAN.md §1.2). */
+  readonly deckCount: DeckCount
 }
 
 // ---------------------------------------------------------------------------
@@ -246,6 +271,14 @@ export function pieceAt(board: Board, sq: Square): Piece | null {
   return board[sq.row][sq.col]
 }
 
+/**
+ * A `rank+suit` string for a card, e.g. "2C". Handy as a display/grouping
+ * key, but with 2-deck games in play `{rank, suit}` is NO LONGER a unique
+ * identifier for a card or a piece — a seat can hold the same card twice
+ * (PLAN.md §1.2). Do not use `cardKey` (or any `{rank, suit}` comparison) as
+ * a uniqueness key for pieces; use `Piece.id` instead, which is always
+ * unique within a game.
+ */
 export function cardKey(card: Card): string {
   return `${card.rank}${card.suit}`
 }

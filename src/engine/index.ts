@@ -26,9 +26,9 @@ export type {
 export {
   SUITS,
   RANKS,
-  SUIT_ORDER,
   SEAT_ORDER,
   SEAT_NAMES,
+  SEAT_SUITS,
   BOARD_SIZE,
   SETUP_SLOTS,
   PAWN_DIRECTION,
@@ -45,8 +45,15 @@ export {
 // Deck
 // ---------------------------------------------------------------------------
 
-export type { Rng } from './deck'
-export { makeRng, buildDeck, shuffle, deal } from './deck'
+export type { Rng, DeckCount } from './deck'
+export {
+  makeRng,
+  buildDeck,
+  buildSuitDeck,
+  shuffle,
+  deal,
+  DECK_COUNTS,
+} from './deck'
 
 // ---------------------------------------------------------------------------
 // Setup

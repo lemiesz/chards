@@ -6,10 +6,16 @@
 
 import type { GameState } from '../engine/types'
 import { serialize, deserialize } from '../engine/serialize'
-import { parseAiConfig, type AiConfig } from './aiConfig'
+import {
+  parseAiConfig,
+  parseAiPace,
+  type AiConfig,
+  type AiPace,
+} from './aiConfig'
 
 const SAVE_KEY = 'chards:save'
 const AI_KEY = 'chards:ai'
+const PACE_KEY = 'chards:pace'
 
 function storage(): Storage | null {
   try {
@@ -54,6 +60,7 @@ export function clearSave(): void {
   try {
     store.removeItem(SAVE_KEY)
     store.removeItem(AI_KEY)
+    store.removeItem(PACE_KEY)
   } catch {
     // ignore
   }
@@ -84,4 +91,24 @@ export function loadAiConfig(): AiConfig | null {
 
 export function hasSave(): boolean {
   return loadGame() !== null
+}
+
+export function saveAiPace(pace: AiPace): void {
+  const store = storage()
+  if (!store) return
+  try {
+    store.setItem(PACE_KEY, pace)
+  } catch {
+    // ignore
+  }
+}
+
+export function loadAiPace(): AiPace | null {
+  const store = storage()
+  if (!store) return null
+  try {
+    return parseAiPace(store.getItem(PACE_KEY))
+  } catch {
+    return null
+  }
 }

@@ -536,3 +536,16 @@
   border-radius: 999px;
   padding: 0.1rem 0.4rem;
 }
+
+.seat-setup__suit {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.seat-setup__suit--red {
+  color: #ff6b6b;
+}
+
+.seat-setup__suit--black {
+  color: var(--text-dim);
+}
